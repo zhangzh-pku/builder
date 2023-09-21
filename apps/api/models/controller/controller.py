@@ -2,16 +2,16 @@ import asyncio
 from typing import Union
 
 from loguru import logger
-from models.base import BaseManager, Dataset, Model, SessionState
-from models.workflow import Workflow
-from models.retrieval import Retriever
-from models.data_loader import PDFLoader
+from apps.api.models.base import BaseManager, Dataset, Model, SessionState
+from apps.api.models.workflow import Workflow
+from apps.api.models.retrieval import Retriever
+from apps.api.models.data_loader import PDFLoader
 from langchain.text_splitter import CharacterTextSplitter
-from utils import GoogleCloudStorageClient
+from apps.api.utils import GoogleCloudStorageClient
 from langchain.schema import Document
 
 from .webhook import WebhookHandler
-from utils.config import UPSTASH_REDIS_REST_TOKEN, UPSTASH_REDIS_REST_URL
+from apps.api.utils.config import UPSTASH_REDIS_REST_TOKEN, UPSTASH_REDIS_REST_URL
 import redis
 import json
 

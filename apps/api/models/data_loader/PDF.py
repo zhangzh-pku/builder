@@ -4,13 +4,13 @@ import sys
 from langchain.schema import Document
 from langchain.text_splitter import CharacterTextSplitter
 from loguru import logger
-from models.base.dataset import Dataset, Document as DocumentModel
+from apps.api.models.base.dataset import Dataset, Document as DocumentModel
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
 from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
 from pdfminer.pdfpage import PDFPage
 from pydantic import BaseModel, Field
-from utils.StorageClient import GoogleCloudStorageClient
+from apps.api.utils.StorageClient import GoogleCloudStorageClient
 from langchain.document_loaders import AsyncChromiumLoader
 
 

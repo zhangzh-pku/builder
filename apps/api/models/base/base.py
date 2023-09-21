@@ -6,7 +6,7 @@ from sqlalchemy import MetaData, Table, create_engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.pool import QueuePool
-from utils.config import DATABASE_URL
+from apps.api.utils.config import DATABASE_URL
 
 
 Base = declarative_base()

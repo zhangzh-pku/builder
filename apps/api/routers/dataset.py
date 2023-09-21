@@ -12,6 +12,9 @@ from models.retrieval import Retriever
 from pydantic import BaseModel
 from concurrent.futures import ThreadPoolExecutor
 from fastapi import Query
+from apps.api.celery_app import background_upsert_dataset, background_create_dataset
+import time
+
 
 executor = ThreadPoolExecutor(max_workers=1000)
 
@@ -34,36 +37,19 @@ def get_dataset(id: str):
         return {"data": dataset, "message": "success", "status": 200}
 
 
-def background_create_dataset(dataset: Dataset):
-    try:
-        dataset_manager.save_dataset(dataset)
-        logger.info(f"Dataset {dataset.id} created.")
-    except Exception as e:
-        logger.error(f"Error during creation of dataset {dataset.id}: {e}")
-
-
 @router.post("/", tags=["datasets"])
 async def create_dataset(dataset: Dataset):
     with graphsignal.start_trace("create_dataset"):
         logger.info(f"dataset creating: {dataset}")
         dataset.id = uuid4().hex
         try:
-            loop = asyncio.get_event_loop()
-            loop.run_in_executor(executor, background_create_dataset, dataset)
+            background_create_dataset.delay(dataset)
             return {"data": {"id": dataset.id}, "message": "success", "status": 200}
         except Exception as e:
             logger.error(e)
             raise HTTPException(
                 status_code=400, detail="Dataset not created with error: {}".format(e)
             )
-
-
-def background_upsert_dataset(id: str, dataset_info: dict):
-    try:
-        dataset_manager.upsert_dataset(id, dataset_info)
-        logger.info(f"Upsert for dataset {id} completed.")
-    except Exception as e:
-        logger.error(f"Error during upsert for dataset {id}: {e}")
 
 
 @router.patch("/{id}", tags=["datasets"])
@@ -77,7 +63,8 @@ async def update_dataset(
         logger.info(f"dataset updating: {dataset}")
         try:
             if preview != 0 and uid is not None:
-                dataset_manager.upsert_preview(Dataset(**dataset, id=id), preview, uid)
+                dataset_manager.upsert_preview(
+                    Dataset(**dataset, id=id), preview, uid)
                 return {"message": "success", "status": 200}
             documents = dataset.get("documents", [])
             for doc in documents:
@@ -85,8 +72,11 @@ async def update_dataset(
                 if uid is None:
                     logger.warning(f"UID not found in document {doc}")
                 dataset_manager.delete_preview_segment(id, uid)
-            loop = asyncio.get_event_loop()
-            loop.run_in_executor(executor, background_upsert_dataset, id, dataset)
+            for doc in documents:
+                dataset = {
+                    "documents": [doc],
+                }
+                background_upsert_dataset.delay(id, dataset)
             return {"message": "success", "status": 200}
         except Exception as e:
             logger.error(e)
@@ -150,7 +140,8 @@ def retrieve_document_segments(
         except ValueError as e:
             return error_mapping.get(
                 str(e),
-                {"message": "Internal Server Error", "status": "500", "data": None},
+                {"message": "Internal Server Error",
+                    "status": "500", "data": None},
             )
 
 
@@ -159,7 +150,8 @@ def retrieve_document_segments(
 )
 def upsert_segment(dataset_id: str, uid: str, segment_id: str, segment: dict):
     with graphsignal.start_trace("upsert_segment"):
-        logger.info(f"dataset: {dataset_id}, uid: {uid}, segment_id: {segment_id}")
+        logger.info(
+            f"dataset: {dataset_id}, uid: {uid}, segment_id: {segment_id}")
         if "content" not in segment:
             return {"message": "content is required", "status": 400}
         try:

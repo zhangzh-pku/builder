@@ -5,7 +5,7 @@ from typing import Optional
 from loguru import logger
 from pydantic import BaseModel, Field
 from sqlalchemy import JSON, Boolean, Column, String
-from utils import OPENAI_API_KEY
+from apps.api.utils import OPENAI_API_KEY
 
 from .base import Base
 

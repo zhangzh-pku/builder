@@ -1,7 +1,7 @@
 from loguru import logger
-from models.base import DatasetStatusWebhookRequest
+from apps.api.models.base import DatasetStatusWebhookRequest
 from tenacity import after_log, retry, stop_after_attempt, wait_fixed
-from utils.config import WEBHOOK_ENDPOINT
+from apps.api.utils.config import WEBHOOK_ENDPOINT
 import requests
 
 

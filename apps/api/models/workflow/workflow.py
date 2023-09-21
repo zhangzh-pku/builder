@@ -14,9 +14,9 @@ from langchain.prompts import PromptTemplate
 from langchain.schema import BaseMessage
 from langchain.schema.messages import get_buffer_string
 from loguru import logger
-from models.base.model import Model
-from models.retrieval import Retriever
-from utils.config import (
+from apps.api.models.base.model import Model
+from apps.api.models.retrieval import Retriever
+from apps.api.utils.config import (
     AZURE_API_VERSION,
     AZURE_BASE_URL,
     AZURE_DEPLOYMENT_NAME,

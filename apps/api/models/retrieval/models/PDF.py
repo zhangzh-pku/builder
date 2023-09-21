@@ -12,14 +12,14 @@ from langchain.retrievers.self_query.base import SelfQueryRetriever
 from langchain.schema import Document
 from langchain.vectorstores import Pinecone
 from loguru import logger
-from models.base import Dataset
-from models.data_loader import PDFLoader
+from apps.api.models.base import Dataset
+from apps.api.models.data_loader import PDFLoader
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
 from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
 from pdfminer.pdfpage import PDFPage
 from pydantic import Field
-from utils import PINECONE_API_KEY, PINECONE_ENVIRONMENT
+from apps.api.utils import PINECONE_API_KEY, PINECONE_ENVIRONMENT
 
 
 def extract_text_from_pdf(contents: io.BytesIO) -> list:
