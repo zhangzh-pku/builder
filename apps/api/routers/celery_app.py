@@ -7,8 +7,6 @@ from celery.exceptions import MaxRetriesExceededError
 from urllib.parse import quote_plus
 from utils.config import UPSTASH_REDIS_REST_TOKEN, UPSTASH_REDIS_REST_URL
 
-UPSTASH_REDIS_REST_URL='usw2-secure-robin-30535.upstash.io'
-UPSTASH_REDIS_REST_TOKEN='7ed79ff877ce4df7b03c8abdffc5a705'
 app = Celery('tasks')
 
 # Configuration
