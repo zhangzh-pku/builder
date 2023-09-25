@@ -265,6 +265,8 @@ class DatasetManager(BaseManager):
         ]
         segments = []
         vectors = Retriever.fetch_vectors(ids=segment_ids)
+        print('------------Segments id')
+        print(segment_ids)
         for seg_id in segment_ids:
             vector = vectors.get(seg_id)
             if (
