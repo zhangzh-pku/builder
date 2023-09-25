@@ -90,13 +90,21 @@ class DocumentHandler(ABC, DocumentProcessingMixin):
 
     def process(self, document: Document, dataset: Dataset) -> List[Document]:
         content = self.fetch_content(document)
+        
+        # Calculate the content size
+        document.content_size = sys.getsizeof(content)
+        
         text_splitter = self.get_text_splitter(document)
         docs = [Document(page_content=content_part, metadata={}) for content_part in self.split_content(content)]
-        docs = text_splitter.split_documents(docs)
+        
+        # Set the page size
+        document.page_size = len(docs)
+        
         for page_number, doc in enumerate(docs):
             doc.metadata["page_number"] = page_number
             doc.metadata["urn"] = f"{dataset.id}-{document.url}-{doc.metadata['page_number']}"
 
+        logger.info(f"got documents: {len(docs)} while loading dataset {dataset.id}")
         return docs
 
 class PDFHandler(DocumentHandler):

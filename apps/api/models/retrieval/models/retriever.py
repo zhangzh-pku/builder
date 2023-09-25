@@ -67,13 +67,14 @@ class Retriever:
     @classmethod
     def create_index(cls, dataset: Dataset):
         docs = load_and_split_documents([dataset])
-
+        #print(docs)
         embedding = OpenAIEmbeddings()
 
         ids = [doc.metadata["urn"] for doc in docs]
         texts = [doc.page_content for doc in docs]
         metadatas = [doc.metadata for doc in docs]
-
+        print(ids)
+        print(metadatas)
         # metadata same for all pages in a document
         metadata = docs[0].metadata
 
