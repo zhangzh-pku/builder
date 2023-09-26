@@ -1,5 +1,4 @@
 from typing import List
-from models.base.dataset import Document
 from langchain.text_splitter import CharacterTextSplitter
 from abc import ABC, abstractmethod
 from pdfminer.layout import LAParams
@@ -8,16 +7,10 @@ from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer.pdfpage import PDFPage
 import io
 import sys
-
-from langchain.schema import Document
-from langchain.text_splitter import CharacterTextSplitter
 from loguru import logger
-from models.base.dataset import Dataset, Document as DocumentModel
-from pdfminer.converter import TextConverter
-from pdfminer.layout import LAParams
-from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
-from pdfminer.pdfpage import PDFPage
+from models.base.dataset import Dataset, Document
 from pydantic import BaseModel, Field
+from docx import Document as WordDocument
 from utils.StorageClient import GoogleCloudStorageClient, AnnotatedDataStorageClient
 
 
@@ -71,15 +64,7 @@ class DocumentProcessingMixin:
     def split_content(self, content: str) -> List[str]:
         return content.split("\f")
 
-    def get_document_page_size(document: DocumentModel) -> int:
-        if document.page_size != 0:
-            return document.page_size
-        else:
-            pdf_content = GoogleCloudStorageClient().load(document.url)
-            text = DocumentProcessingMixin.extract_text_from_pdf(pdf_content)
-            pages = text.split("\f")
-            return len(pages)
-
+# Document Handlers
 class DocumentHandler(ABC, DocumentProcessingMixin):
 
     @abstractmethod
@@ -87,26 +72,24 @@ class DocumentHandler(ABC, DocumentProcessingMixin):
         pass
 
     def generate_metadata(self, document: Document) -> dict:
-        # By default, consider the URL as the source.
         return {
-            "source": document.url
+        # By default, consider the URL as the source.
+            "source": document.url  
         }
 
     def process(self, document: Document, dataset: Dataset) -> List[Document]:
         content = self.fetch_content(document)
         document.content_size = sys.getsizeof(content)
 
-        # Get the default metadata
-        metadata = self.generate_metadata(document)
-        docs = [Document(page_content=content_part, metadata=metadata.copy()) for content_part in self.split_content(content)]
+        metadataq = self.generate_metadata(document)
+        # Generate documents with the content and the metadata
+        docs = [Document(page_content=content_part, metadata=metadataq) for content_part in self.split_content(content)]
         
         # Set the page size
         document.page_size = len(docs)
-        
         for page_number, doc in enumerate(docs):
             doc.metadata["page_number"] = page_number
             doc.metadata["urn"] = f"{dataset.id}-{document.url}-{doc.metadata['page_number']}"
-
         logger.info(f"got documents: {len(docs)} while loading dataset {dataset.id}")
         return docs
 
@@ -124,19 +107,31 @@ class AnnotatedDataHandler(DocumentHandler):
         return webhook_handler.load(document.uid)
 
     def split_content(self, content: str) -> List[str]:
-        return [content]  # as annotated data might not be split with "\f"
-
+        return [content]
+    
     def generate_metadata(self, document: Document) -> dict:
         # For annotated data, the UID is the source.
         return {
-            "source": document.uid
+            "source": document.uid  
         }
+    
+class WordHandler(DocumentHandler):
+    
+    def fetch_content(self, document: Document) -> str:
+        storage_client = GoogleCloudStorageClient()
+        word_content = storage_client.load(document.url)
+        word_doc = WordDocument(word_content)
+        full_text = []
+        for para in word_doc.paragraphs:
+            full_text.append(para.text)
+        
+        return '\n'.join(full_text)
 
 def load_and_split_documents(datasets: list[Dataset]):
     handlers = {
         "pdf": PDFHandler(),
         "annotated_data": AnnotatedDataHandler(),
-        # ... Add more handlers for new document types ...
+        "word": WordHandler()
     }
 
     docs = []
@@ -144,7 +139,7 @@ def load_and_split_documents(datasets: list[Dataset]):
         for document in dataset.documents:
             handler = handlers.get(document.type)
             if handler:
-                processed_docs = handler.process(document, dataset)  # Pass the dataset as an argument
+                processed_docs = handler.process(document, dataset)
                 docs.extend(processed_docs)
             else:
                 # Handle unsupported document types
