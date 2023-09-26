@@ -23,22 +23,6 @@ from utils import PINECONE_API_KEY, PINECONE_ENVIRONMENT
 from ..webhook import WebhookHandler
 from models.data_loader import load_and_split_documents  
 
-
-
-def extract_text_from_pdf(contents: io.BytesIO) -> list:
-    resource_manager = PDFResourceManager()
-    fake_file_handle = io.StringIO()
-    converter = TextConverter(resource_manager, fake_file_handle, laparams=LAParams())
-    page_interpreter = PDFPageInterpreter(resource_manager, converter)
-    for page in PDFPage.get_pages(contents, caching=True, check_extractable=True):
-        page_interpreter.process_page(page)
-    text = fake_file_handle.getvalue()
-    converter.close()
-    fake_file_handle.close()
-
-    return text
-
-
 class PatchedSelfQueryRetriever(SelfQueryRetriever):
     async def _aget_relevant_documents(
         self, query: str, *, run_manager: AsyncCallbackManagerForRetrieverRun
