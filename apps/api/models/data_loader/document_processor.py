@@ -5,14 +5,13 @@ from abc import ABC, abstractmethod
 import io
 import sys
 from docx import Document as WordDocument
-from options import PDFSplitterOption, PDFEmbeddingOption, PDFRetrivalOption
+from models.data_loader.options import PDFSplitterOption, PDFEmbeddingOption, PDFRetrivalOption
 from langchain.schema import Document
 from loguru import logger
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
 from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
 from pdfminer.pdfpage import PDFPage
-from pydantic import BaseModel, Field
 from utils.StorageClient import GoogleCloudStorageClient, AnnotatedDataStorageClient
 
 # Mixins
