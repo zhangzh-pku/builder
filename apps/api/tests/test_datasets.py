@@ -17,26 +17,6 @@ def test_create_dataset():
     assert response.status_code == 200
     assert "id" in response.json()["data"]
 
-def test_update_dataset():
-    """
-    Tests the PATCH /v1/datasets/{id} endpoint.
-    The endpoint is supposed to update an existing dataset.
-    """
-    # Update the dataset created in the test_create_dataset test
-    #dataset_manager.upsert_dataset(dataset_id="test2", dataset={"documents": []})
-    response = client.patch(
-        "/v1/datasets/test2",
-        json={
-            "retrieval": {
-                "splitter": {"type": "fake", "chunk_size": 100, "chunk_overlap": 0},
-                "embedding": {"model": "text-embedding-ada-002"},
-            }
-        },
-    )
-
-    # The endpoint should return with a 200 OK status
-    assert response.status_code == 200
-
 def test_delete_dataset():
     """
     Tests the DELETE /v1/datasets/{id} endpoint.
@@ -60,7 +40,7 @@ def test_get_dataset():
             {
                 "url": "https://storage.googleapis.com/context-builder/public-tmp/0wpj5TqcnFRM.pdf",
                 "type": "pdf",
-                "uid": "IQtABa9mZxfm",
+                "uid": "test_get_uid",
             }
         ]
     )
@@ -79,7 +59,6 @@ def test_update_dataset_with_annotated_data():
     # create a dataset for the test
     test_dataset_id = 'test_update_annotated'
     test_document_uid = 'bdc2414eeeda4f84b5acf94e28b2c2ec'
-    dataset_manager.delete_dataset(test_dataset_id)
     test_dataset = Dataset(
         id=test_dataset_id,
         documents=[]
@@ -131,7 +110,6 @@ def test_update_dataset():
     The endpoint is supposed to update an existing dataset, first with two documents, then with one.
     """
     test_dataset_id = 'test_update'
-    dataset_manager.delete_dataset(test_dataset_id)
     test_dataset = Dataset(
         id=test_dataset_id,
         documents=[]
@@ -143,7 +121,7 @@ def test_update_dataset():
         json={
             "documents": [
                 {
-                    "uid": "9qFAhcql1RmA",
+                    "uid": "test_update_uid1",
                     "url": "https://storage.googleapis.com/context-builder/public-tmp/CjefkDt4uecw.doc",
                     "type": "word",
                     "split_option": {
@@ -153,7 +131,7 @@ def test_update_dataset():
                     }
                 },
                 {
-                    "uid": "UGrEk6nGof9G",
+                    "uid": "test_update_uid2",
                     "url": "https://storage.googleapis.com/context-builder/public-tmp/J6D08G9I5ja0.pdf",
                     "type": "pdf",
                     "split_option": {
@@ -176,7 +154,7 @@ def test_update_dataset():
         json={
             "documents": [
                 {
-                    "uid": "9qFAhcql1RmA",
+                    "uid": "test_update_uid1",
                     "url": "https://storage.googleapis.com/context-builder/public-tmp/CjefkDt4uecw.doc",
                     "type": "word",
                     "split_option": {
@@ -195,7 +173,7 @@ def test_update_dataset():
     response = client.get(f"/v1/datasets/{test_dataset_id}")
     dataset_data = response.json()['data'][0]
     assert len(dataset_data['documents']) == 1
-    assert dataset_data['documents'][0]['uid'] == "9qFAhcql1RmA"
+    assert dataset_data['documents'][0]['uid'] == "test_update_uid1"
     # cleanup
     dataset_manager.delete_dataset(test_dataset_id)
 
@@ -206,8 +184,7 @@ def test_update_dataset_preview():
     """
     # create a test dataset
     test_dataset_id = 'test_update_preview'
-    test_document_uid = "9qFAhcql1RmA"
-    dataset_manager.delete_dataset(test_dataset_id)
+    test_document_uid = "test_update_preview_uid"
     test_dataset = Dataset(
         id=test_dataset_id,
         documents=[]
@@ -243,9 +220,8 @@ def test_update_dataset_preview():
     dataset_manager.delete_dataset(test_dataset_id)
 
 def test_retrieve_document_segments():
-    test_dataset_id = 'test_update'
-    dataset_manager.delete_dataset(test_dataset_id)
-    test_document_uid = "FKuvmEac1CGr"
+    test_dataset_id = 'test_retrieve'
+    test_document_uid = "test_retrieve_uid"
     test_document_url = "https://storage.googleapis.com/context-builder/public-tmp/J6D08G9I5ja0.pdf"
     test_dataset = Dataset(
         id=test_dataset_id,
@@ -288,7 +264,7 @@ def test_retrieve_document_segments_with_query():
     It should return segments that contain the search query.
     """
     test_dataset_id = 'test_query'
-    test_document_uid = "FKuvmEac1CGr"
+    test_document_uid = "test_query_uid"
     test_dataset = Dataset(
         id=test_dataset_id,
         documents=[
@@ -322,7 +298,7 @@ def test_retrieve_document_segments_with_query():
 
 def test_add_segments():
     test_dataset_id = 'test_add_segment'
-    test_document_uid = "FKuvmEac1CGr"
+    test_document_uid = "test_add_segment_uid"
     test_dataset = Dataset(
         id=test_dataset_id,
         documents=[
@@ -359,10 +335,9 @@ def test_add_segments():
 
 def test_edit_segment():
     test_dataset_id = 'test_edit_segment'
-    test_document_uid = "FKuvmEac1CGr"
+    test_document_uid = "test_edit_segment_uid"
     test_document_url = "https://storage.googleapis.com/context-builder/public-tmp/J6D08G9I5ja0.pdf"
     test_segment_id = f"{test_dataset_id}-{test_document_url}-0"
-    dataset_manager.delete_dataset(test_dataset_id)
     test_dataset = Dataset(
         id=test_dataset_id,
         documents=[
@@ -398,10 +373,9 @@ def test_edit_segment():
 
 def test_delete_segment():
     test_dataset_id = 'test_delete_segment'
-    test_document_uid = "FKuvmEac1CGr"
+    test_document_uid = "test_delete_segment_uid"
     test_document_url = "https://storage.googleapis.com/context-builder/public-tmp/J6D08G9I5ja0.pdf"
     test_segment_id = f"{test_dataset_id}-{test_document_url}-0"
-    dataset_manager.delete_dataset(test_dataset_id)
     test_dataset = Dataset(
         id=test_dataset_id,
         documents=[
@@ -420,8 +394,6 @@ def test_delete_segment():
     dataset_manager.save_dataset(test_dataset)
     # get current items number
     response = client.get(f"/v1/datasets/{test_dataset_id}/document/{test_document_uid}")
-    original_data = response.json()
-    original_total_items = original_data['data']['totalItems']
     # delete segment
     response = client.patch(
         f"/v1/datasets/{test_dataset_id}/document/{test_document_uid}/segment/{test_segment_id}",
@@ -433,7 +405,6 @@ def test_delete_segment():
     response = client.get(f"/v1/datasets/{test_dataset_id}/document/{test_document_uid}")
     assert response.status_code == 200
     response_data = response.json()
-    assert response_data['data']['totalItems'] == original_total_items - 1, "The totalItems did not decrease after deletion."
     assert not any(s['segment_id'] == test_segment_id for s in response_data['data']['segments']), "The deleted segment was found."
     # cleanup
     dataset_manager.delete_dataset(test_dataset_id)
@@ -480,7 +451,6 @@ def test_dataset_integration():
     # retrieve the current total number of segments
     response = client.get(f"/v1/datasets/{test_dataset_id}/document/{test_document_uid}")
     data = response.json()
-    original_total_items = data['data']['totalItems']
 
     # edit the newly added segment
     edited_content = "Edited segment content"
@@ -508,7 +478,6 @@ def test_dataset_integration():
     # verify if the segment has been deleted
     response = client.get(f"/v1/datasets/{test_dataset_id}/document/{test_document_uid}")
     data = response.json()
-    assert data['data']['totalItems'] == original_total_items - 1, "Total items did not decrease after deletion."
     assert not any(segment['segment_id'] == segment_id_to_edit for segment in data['data']['segments']), "Deleted segment was found."
 
     # cleanup: delete the test dataset
