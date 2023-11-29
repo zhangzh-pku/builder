@@ -28,6 +28,7 @@ class DatasetManager(BaseManager):
             password=UPSTASH_REDIS_REST_TOKEN,
             port=UPSTASH_REDIS_REST_PORT,
             ssl=True,
+            ssl_cert_reqs=None,
         )
 
     @staticmethod
