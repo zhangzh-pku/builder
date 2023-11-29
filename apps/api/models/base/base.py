@@ -11,7 +11,7 @@ from utils.config import DATABASE_URL
 
 Base = declarative_base()
 
-
+print(DATABASE_URL)
 class BaseManager:
     engine = create_engine(
         DATABASE_URL,
