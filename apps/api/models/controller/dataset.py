@@ -23,7 +23,7 @@ class DatasetManager(BaseManager):
     def __init__(self) -> None:
         super().__init__()
         self.table = self.get_table("datasets")
-        self.redis = (
+        self.redis = redis.Redis(
             host=UPSTASH_REDIS_REST_URL,
             password=UPSTASH_REDIS_REST_TOKEN,
             port=UPSTASH_REDIS_REST_PORT,
