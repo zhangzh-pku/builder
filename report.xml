@@ -1,0 +1,397 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="1" failures="4" skipped="0" tests="19" time="524.027" timestamp="2023-11-29T09:25:16.455263" hostname="LAPTOP-GD9TV0PR"><testcase classname="apps.api.tests.test_datasets" name="test_create_dataset" time="7.203" /><testcase classname="apps.api.tests.test_datasets" name="test_delete_dataset" time="1.288" /><testcase classname="apps.api.tests.test_datasets" name="test_get_dataset" time="25.463" /><testcase classname="apps.api.tests.test_datasets" name="test_update_dataset_with_annotated_data" time="41.927" /><testcase classname="apps.api.tests.test_datasets" name="test_update_dataset" time="81.682" /><testcase classname="apps.api.tests.test_datasets" name="test_update_dataset_preview" time="15.130" /><testcase classname="apps.api.tests.test_datasets" name="test_retrieve_document_segments" time="16.259" /><testcase classname="apps.api.tests.test_datasets" name="test_retrieve_document_segments_with_query" time="16.185" /><testcase classname="apps.api.tests.test_datasets" name="test_add_segments" time="9.771"><failure message="sqlalchemy.exc.IntegrityError: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint &quot;datasets_pkey&quot;&#10;DETAIL:  Key (id)=(test_add_segment) already exists.&#10;&#10;[SQL: INSERT INTO datasets (id, documents, retrieval) VALUES (%(id)s, %(documents)s, %(retrieval)s)]&#10;[parameters: {'id': 'test_add_segment', 'documents': '[{&quot;uid&quot;: &quot;test_add_segment_uid&quot;, &quot;url&quot;: &quot;https://storage.googleapis.com/context-builder/public-tmp/J6D08G9I5ja0.pdf&quot;, &quot;type&quot;: &quot;pdf&quot;, &quot;page_size&quot;: 4, &quot;split_option&quot;: {&quot;split_type&quot;: &quot;character&quot;, &quot;chunk_size&quot;: 500, &quot;chunk_overlap&quot;: 0}, &quot;content_size&quot;: 1514, &quot;hundredth_ids&quot;: []}]', 'retrieval': '{}'}]&#10;(Background on this error at: https://sqlalche.me/e/20/gkpj)">self = &lt;sqlalchemy.engine.base.Connection object at 0x7f009073f340&gt;
+dialect = &lt;sqlalchemy.dialects.postgresql.psycopg2.PGDialect_psycopg2 object at 0x7f0096e921a0&gt;
+context = &lt;sqlalchemy.dialects.postgresql.psycopg2.PGExecutionContext_psycopg2 object at 0x7f009073c460&gt;
+statement = &lt;sqlalchemy.dialects.postgresql.base.PGCompiler object at 0x7f0092221ff0&gt;
+parameters = [{'documents': '[{"uid": "test_add_segment_uid", "url": "https://storage.googleapis.com/context-builder/public-tmp/J6D...: 500, "chunk_overlap": 0}, "content_size": 1514, "hundredth_ids": []}]', 'id': 'test_add_segment', 'retrieval': '{}'}]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -&gt; CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+&gt;                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+/home/lxwww/.local/lib/python3.10/site-packages/sqlalchemy/engine/base.py:1965: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;sqlalchemy.dialects.postgresql.psycopg2.PGDialect_psycopg2 object at 0x7f0096e921a0&gt;
+cursor = &lt;cursor object at 0x7f00910ad6c0; closed: -1&gt;
+statement = 'INSERT INTO datasets (id, documents, retrieval) VALUES (%(id)s, %(documents)s, %(retrieval)s)'
+parameters = {'documents': '[{"uid": "test_add_segment_uid", "url": "https://storage.googleapis.com/context-builder/public-tmp/J6D0...": 500, "chunk_overlap": 0}, "content_size": 1514, "hundredth_ids": []}]', 'id': 'test_add_segment', 'retrieval': '{}'}
+context = &lt;sqlalchemy.dialects.postgresql.psycopg2.PGExecutionContext_psycopg2 object at 0x7f009073c460&gt;
+
+    def do_execute(self, cursor, statement, parameters, context=None):
+&gt;       cursor.execute(statement, parameters)
+E       psycopg2.errors.UniqueViolation: duplicate key value violates unique constraint "datasets_pkey"
+E       DETAIL:  Key (id)=(test_add_segment) already exists.
+
+/home/lxwww/.local/lib/python3.10/site-packages/sqlalchemy/engine/default.py:921: UniqueViolation
+
+The above exception was the direct cause of the following exception:
+
+    def test_add_segments():
+        test_dataset_id = 'test_add_segment'
+        test_document_uid = "test_add_segment_uid"
+        test_dataset = Dataset(
+            id=test_dataset_id,
+            documents=[
+                {
+                    "uid": test_document_uid,
+                    "url": "https://storage.googleapis.com/context-builder/public-tmp/J6D08G9I5ja0.pdf",
+                    "type": "pdf",
+                    "split_option": {
+                        "split_type": "character",
+                        "chunk_size": 500,
+                        "chunk_overlap": 0
+                    }
+                }
+            ]
+        )
+&gt;       dataset_manager.save_dataset(test_dataset)
+
+apps/api/tests/test_datasets.py:317: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+apps/api/models/base/base.py:46: in wrapper
+    raise e
+apps/api/models/base/base.py:40: in wrapper
+    results = session.execute(query)
+/home/lxwww/.local/lib/python3.10/site-packages/sqlalchemy/orm/session.py:2262: in execute
+    return self._execute_internal(
+/home/lxwww/.local/lib/python3.10/site-packages/sqlalchemy/orm/session.py:2153: in _execute_internal
+    result = conn.execute(
+/home/lxwww/.local/lib/python3.10/site-packages/sqlalchemy/engine/base.py:1412: in execute
+    return meth(
+/home/lxwww/.local/lib/python3.10/site-packages/sqlalchemy/sql/elements.py:515: in _execute_on_connection
+    return connection._execute_clauseelement(
+/home/lxwww/.local/lib/python3.10/site-packages/sqlalchemy/engine/base.py:1635: in _execute_clauseelement
+    ret = self._execute_context(
+/home/lxwww/.local/lib/python3.10/site-packages/sqlalchemy/engine/base.py:1844: in _execute_context
+    return self._exec_single_context(
+/home/lxwww/.local/lib/python3.10/site-packages/sqlalchemy/engine/base.py:1984: in _exec_single_context
+    self._handle_dbapi_exception(
+/home/lxwww/.local/lib/python3.10/site-packages/sqlalchemy/engine/base.py:2339: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+/home/lxwww/.local/lib/python3.10/site-packages/sqlalchemy/engine/base.py:1965: in _exec_single_context
+    self.dialect.do_execute(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;sqlalchemy.dialects.postgresql.psycopg2.PGDialect_psycopg2 object at 0x7f0096e921a0&gt;
+cursor = &lt;cursor object at 0x7f00910ad6c0; closed: -1&gt;
+statement = 'INSERT INTO datasets (id, documents, retrieval) VALUES (%(id)s, %(documents)s, %(retrieval)s)'
+parameters = {'documents': '[{"uid": "test_add_segment_uid", "url": "https://storage.googleapis.com/context-builder/public-tmp/J6D0...": 500, "chunk_overlap": 0}, "content_size": 1514, "hundredth_ids": []}]', 'id': 'test_add_segment', 'retrieval': '{}'}
+context = &lt;sqlalchemy.dialects.postgresql.psycopg2.PGExecutionContext_psycopg2 object at 0x7f009073c460&gt;
+
+    def do_execute(self, cursor, statement, parameters, context=None):
+&gt;       cursor.execute(statement, parameters)
+E       sqlalchemy.exc.IntegrityError: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "datasets_pkey"
+E       DETAIL:  Key (id)=(test_add_segment) already exists.
+E       
+E       [SQL: INSERT INTO datasets (id, documents, retrieval) VALUES (%(id)s, %(documents)s, %(retrieval)s)]
+E       [parameters: {'id': 'test_add_segment', 'documents': '[{"uid": "test_add_segment_uid", "url": "https://storage.googleapis.com/context-builder/public-tmp/J6D08G9I5ja0.pdf", "type": "pdf", "page_size": 4, "split_option": {"split_type": "character", "chunk_size": 500, "chunk_overlap": 0}, "content_size": 1514, "hundredth_ids": []}]', 'retrieval': '{}'}]
+E       (Background on this error at: https://sqlalche.me/e/20/gkpj)
+
+/home/lxwww/.local/lib/python3.10/site-packages/sqlalchemy/engine/default.py:921: IntegrityError</failure></testcase><testcase classname="apps.api.tests.test_datasets" name="test_edit_segment" time="148.100"><failure message="assert 400 == 200&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">def test_edit_segment():
+        test_dataset_id = 'test_edit_segment'
+        test_document_uid = "test_edit_segment_uid"
+        test_document_url = "https://storage.googleapis.com/context-builder/public-tmp/J6D08G9I5ja0.pdf"
+        test_segment_id = f"{test_dataset_id}-{test_document_url}-0"
+        test_dataset = Dataset(
+            id=test_dataset_id,
+            documents=[
+                {
+                    "uid": test_document_uid,
+                    "url": test_document_url,
+                    "type": "pdf",
+                    "split_option": {
+                        "split_type": "character",
+                        "chunk_size": 500,
+                        "chunk_overlap": 0
+                    }
+                }
+            ]
+        )
+        dataset_manager.save_dataset(test_dataset)
+        updated_content = "这是更新后的段落内容。"
+        # edit segment
+        response = client.patch(
+            f"/v1/datasets/{test_dataset_id}/document/{test_document_uid}/segment/{test_segment_id}",
+            json={"content": updated_content}
+        )
+&gt;       assert response.status_code == 200
+E       assert 400 == 200
+E        +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code
+
+apps/api/tests/test_datasets.py:363: AssertionError</failure></testcase><testcase classname="apps.api.tests.test_datasets" name="test_delete_segment" time="58.263" /><testcase classname="apps.api.tests.test_datasets" name="test_dataset_integration" time="59.800" /><testcase classname="apps.api.tests.test_models" name="test_get_model" time="1.644" /><testcase classname="apps.api.tests.test_models" name="test_get_models" time="0.025"><failure message="assert 405 == 200&#10; +  where 405 = &lt;Response [405 Method Not Allowed]&gt;.status_code">def test_get_models():
+        """
+        Tests the GET /v1/models endpoint.
+        The endpoint is supposed to return all models.
+        """
+        response = client.get("/v1/models")
+    
+        # The endpoint should return with a 200 OK status
+&gt;       assert response.status_code == 200
+E       assert 405 == 200
+E        +  where 405 = &lt;Response [405 Method Not Allowed]&gt;.status_code
+
+apps/api/tests/test_models.py:44: AssertionError</failure></testcase><testcase classname="apps.api.tests.test_models" name="test_create_model" time="0.797" /><testcase classname="apps.api.tests.test_models" name="test_update_model" time="0.769" /><testcase classname="apps.api.tests.test_models" name="test_delete_model" time="0.884" /><testcase classname="apps.api.tests.test_workflow" name="test_qa_chat" time="0.009"><error message="failed on setup with &quot;AttributeError: 'DatasetManager' object has no attribute 'update_dataset'&quot;">@pytest.fixture
+    def test_data():
+        llm1 = LLM(
+            name="gpt-3.5-turbo",
+            max_tokens=1000,
+            temperature=0.9,
+            top_p=1,
+            frequency_penalty=0,
+            presence_penalty=0,
+            api_key=OPENAI_API_KEY,
+        )
+        document = Document(
+            uid="test_document_1",
+            url="https://storage.googleapis.com/context-builder/public-tmp/kxPvcLZ1BzRC.pdf",
+            type="pdf",
+            page_size=2,
+        )
+        document.page_size = 2
+        template1 = Prompt(
+            template="""Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question, in its original language.
+    
+    Follow Up Input: {question}
+    Standalone question:"""
+        )
+        dataset = Dataset(
+            id="test_dataset_1",
+            documents=[document],
+        )
+    
+        updated_dict = dataset.dict()
+        updated_dict.pop("id")
+&gt;       dataset_manager.update_dataset(dataset.id, updated_dict)
+E       AttributeError: 'DatasetManager' object has no attribute 'update_dataset'
+
+apps/api/tests/test_workflow.py:48: AttributeError</error></testcase><testcase classname="apps.api.tests.test_workflow" name="test_conversation_chat" time="6.461"><failure message="AttributeError: 'NoneType' object has no attribute 'is_set'">test_conversation = 'test_model_3', capfd = &lt;_pytest.capture.CaptureFixture object at 0x7f009071f310&gt;
+
+    @pytest.mark.asyncio
+    async def test_conversation_chat(test_conversation, capfd):
+        session_id = uuid.uuid4().hex
+        session_state_manager.save_session_state(
+            session_id=session_id, model_id=test_conversation
+        )
+&gt;       async for response in send_message(
+            [
+                Messages(content="tell me the ans of 2^10", role="user"),
+            ],
+            session_id,
+            filt=True,
+        ):
+
+apps/api/tests/test_workflow.py:120: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+messages_contents = [Messages(role='user', content='tell me the ans of 2^10')], session_id = '0bb72dd576024f0ba516bfcda76f6c92', filt = True
+start_time = None, disconnect_event = None
+
+    async def send_message(
+        messages_contents: List[MessagesContent],
+        session_id: str,
+        filt=False,
+        start_time=None,
+        disconnect_event: asyncio.Event = None,
+    ) -&gt; AsyncIterable[str]:
+        messages = []
+        for message_content in messages_contents:
+            if message_content.role == "user":
+                messages.append(HumanMessage(content=message_content.content))
+            elif message_content.role == "system":
+                messages.append(SystemMessage(content=message_content.content))
+            elif message_content.role == "assistant":
+                messages.append(AIMessage(content=message_content.content))
+            else:
+                raise HTTPException(
+                    status_code=400, detail=f"Invalid role: {message_content.role}"
+                )
+    
+        model_id = session_state_manager.get_model_id(session_id)
+        models = model_manager.get_models(model_id)
+        if not models:
+            raise HTTPException(
+                status_code=400, detail=f"Model {model_id} not found in model manager"
+            )
+        if len(models) &gt; 1:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Model {model_id} has {len(models)} models in model manager",
+            )
+        model = models[0]
+        workflow = session_state_manager.get_workflow(session_id, model, disconnect_event)
+    
+        async def wrap_done(fn: Awaitable, event: asyncio.Event):
+            try:
+                await fn
+    
+            except Exception as e:
+                logger.exception(e)
+                raise e
+            finally:
+                event.set()
+    
+        try:
+            task = asyncio.create_task(
+                wrap_done(workflow.agenerate(messages), workflow.context.done)
+            )
+            yield wrap_token(CHUNK_DATA, model_id, session_id, filt=filt)
+    
+            async for token in workflow.context.aiter():
+                if start_time:
+                    duration_time = time.time() - start_time
+                    start_time = None
+                    logger.info(f"duration_time: {duration_time}")
+                    logsang_handler = LogsnagHandler()
+                    asyncio.create_task(
+                        logsang_handler.send_log(
+                            channel="chat",
+                            event="completion",
+                            description=f"model_id:{model_id}, response_time: {duration_time}",
+                            tags={
+                                "model-id": model_id,
+                                "session-id": session_id,
+                                "duration-time": duration_time,
+                            },
+                        )
+                    )
+                yield wrap_token(token, model_id, session_id, filt=filt)
+            await task
+        except Exception as e:
+            logger.warning(e)
+    
+        if not filt:
+            yield f"data: {json.dumps(CompletionsResponse(id=session_id, object='chat.completion.chunk', model=workflow.model.id, choices=[Choices(index=0, finish_reason='stop', delta={})]).dict())}\n\n"
+            info = {
+                "metadata": {
+                    "token": {"total_tokens": workflow.cost_content.total_tokens},
+                    "raw": workflow.io_traces,
+                }
+            }
+            yield f"data: {json.dumps(info)}\n\n"
+            if workflow.error_flags:
+                info = {
+                    "metadata": {"error": wrap_error(str(workflow.error_flags[0].args[0]))}
+                }
+                yield f"data: {json.dumps(info)}\n\n"
+    
+&gt;       if not workflow.disconnect_event.is_set():
+E       AttributeError: 'NoneType' object has no attribute 'is_set'
+
+apps/api/routers/chat.py:153: AttributeError</failure></testcase></testsuite></testsuites>
