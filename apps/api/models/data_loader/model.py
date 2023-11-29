@@ -17,7 +17,7 @@ class ModelManager(BaseManager):
     def __init__(self) -> None:
         super().__init__()
         self.table = self.get_table("models")
-        self.redis = redis.Redis(
+        self.redis = (
             host=UPSTASH_REDIS_REST_URL,
             password=UPSTASH_REDIS_REST_TOKEN,
             port=UPSTASH_REDIS_REST_PORT,
