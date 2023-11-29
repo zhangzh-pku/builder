@@ -19,7 +19,7 @@ class SessionStateManager(BaseManager, PromptManagerMixin):
             host=UPSTASH_REDIS_REST_URL,
             password=UPSTASH_REDIS_REST_TOKEN,
             port=UPSTASH_REDIS_REST_PORT,
-            ssl=False
+            ssl=True
         )
 
     @staticmethod
